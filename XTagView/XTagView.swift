@@ -114,7 +114,6 @@ open class XTagView: UIView {
                 cornerRadius: option.cornerRadius,
                 insets: insets
             )
-//            label.delegate = self
             
             label.text = title
             label.font = font

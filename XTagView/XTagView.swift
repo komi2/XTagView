@@ -37,10 +37,22 @@ class XTagLabel: UILabel {
 
 public protocol XTagViewDelegate {
     func selectTag(sender: UILabel)
+    func backgroundColor(index: Int, title: String, currentColor: UIColor) -> UIColor
+    func titleColor(index: Int, title: String, currentColor: UIColor) -> UIColor
+}
+
+public extension XTagViewDelegate {
+    func backgroundColor(index: Int, title: String, currentColor: UIColor) -> UIColor {
+        return currentColor
+    }
+    func titleColor(index: Int, title: String, currentColor: UIColor) -> UIColor {
+        return currentColor
+    }
 }
 
 public struct XTagViewOption {
     
+    let insets: UIEdgeInsets
     let marginX: CGFloat
     let marginY: CGFloat
     let font: UIFont
@@ -48,9 +60,10 @@ public struct XTagViewOption {
     let titleColor: UIColor
     let backgroundColor: UIColor
     let cornerRadius: CGFloat
-    let insets: UIEdgeInsets
+    let labelInsets: UIEdgeInsets
     
-    public init(marginX: CGFloat, marginY: CGFloat, font: UIFont, containerWidth: CGFloat, titleColor: UIColor, backgroundColor: UIColor, cornerRadius: CGFloat, insets: UIEdgeInsets) {
+    public init(insets: UIEdgeInsets, marginX: CGFloat, marginY: CGFloat, font: UIFont, containerWidth: CGFloat, titleColor: UIColor, backgroundColor: UIColor, cornerRadius: CGFloat, labelInsets: UIEdgeInsets) {
+        self.insets = insets
         self.marginX = marginX
         self.marginY = marginY
         self.font = font
@@ -58,7 +71,7 @@ public struct XTagViewOption {
         self.titleColor = titleColor
         self.backgroundColor = backgroundColor
         self.cornerRadius = cornerRadius
-        self.insets = insets
+        self.labelInsets = labelInsets
     }
 }
 
@@ -86,25 +99,27 @@ open class XTagView: UIView {
         }
         
         let containerWidth = option.containerWidth
-        let areaWidth = bounds.width
+        frame.size = CGSize(width: containerWidth, height: 0)
         let marginX = option.marginX
         let marginY = option.marginY
         let font = option.font
+        let labelInsets = option.labelInsets
         let insets = option.insets
-        let height = font.lineHeight + insets.top + insets.bottom
+        let areaWidth = bounds.width - (insets.left + insets.right)
+        let height = font.lineHeight + labelInsets.top + labelInsets.bottom
         
-        var x: CGFloat = marginX
-        var y: CGFloat = marginY
+        var x: CGFloat = insets.left
+        var y: CGFloat = insets.top
         var line = 1
         
-        for title in titles {
+        for (index, title) in titles.enumerated() {
             var width = labelTextWidth(text: title, font: font, height: height)
             if width > areaWidth {
                 width = areaWidth
             }
             
             if areaWidth - x < width {
-                x = marginX
+                x = insets.left
                 y += height + marginY
                 line += 1
             }
@@ -112,13 +127,27 @@ open class XTagView: UIView {
             let label = XTagLabel(
                 frame: CGRect(x: x, y: y, width: width, height: height),
                 cornerRadius: option.cornerRadius,
-                insets: insets
+                insets: labelInsets
             )
             
             label.text = title
             label.font = font
             label.textColor = option.titleColor
             label.backgroundColor = option.backgroundColor
+            
+            if let _ = delegate {
+                label.backgroundColor = delegate!.backgroundColor(
+                    index: index,
+                    title: title,
+                    currentColor: option.backgroundColor
+                )
+                label.textColor = delegate!.titleColor(
+                    index: index,
+                    title: title,
+                    currentColor: option.titleColor
+                )
+            }
+            
             addSubview(label)
             
             x += width + marginX
@@ -127,10 +156,10 @@ open class XTagView: UIView {
             label.addGestureRecognizer(gesture)
         }
         
-        frame.size = CGSize(
-            width: containerWidth,
-            height: CGFloat(line + 1) * marginY + CGFloat(line) * height
-        )
+        
+        let frameHeight = CGFloat(line - 1) * marginY + CGFloat(line) * height + insets.top + insets.bottom
+        
+        frame.size = CGSize(width: containerWidth, height: frameHeight)
     }
     
     func labelTextWidth(text: String, font: UIFont, height: CGFloat) -> CGFloat {
@@ -138,14 +167,19 @@ open class XTagView: UIView {
         label.font = font
         label.text = text
         label.sizeToFit()
-        return label.frame.size.width + option.insets.left + option.insets.right
+        return label.frame.size.width + option.labelInsets.left + option.labelInsets.right
     }
     
     @objc func selectTag(sender: UITapGestureRecognizer) {
-        if sender.state == .ended {
-            if let label = sender.view as? UILabel {
-                delegate?.selectTag(sender: label)
-            }
+        guard let label = sender.view as? UILabel else {
+            return
+        }
+        
+        switch sender.state {
+        case .ended:
+            delegate?.selectTag(sender: label)
+        default:
+            return
         }
     }
 }

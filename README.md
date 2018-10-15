@@ -34,12 +34,12 @@ let option = XTagViewOption(
   insets: UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6),
   marginX: CGFloat(6),
   marginY: CGFloat(6),
-  font: UIFont.boldSystemFont(ofSize: 14),
+  font: UIFont.systemFont(ofSize: 14),
   containerWidth: CGFloat(300),
   titleColor: .white,
   backgroundColor: .black,
   cornerRadius: CGFloat(12),
-  labelInsets: UIEdgeInsets(top: 6, left: 8, bottom: 6, right: 8)
+  labelInsets: UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
 )
 
 let xTagView = XTagView(option: option)
